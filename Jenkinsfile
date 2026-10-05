@@ -11,6 +11,7 @@ pipeline {
         TOMCAT_USER = 'admin'
         TOMCAT_PASS = 'admin'
         APP_NAME = 'webapp1'
+        WAR_FILE = 'target/demo-0.0.1-SNAPSHOT.war'
     }
 
     stages {
@@ -28,25 +29,52 @@ pipeline {
             }
         }
 
+        stage('Validate WAR') {
+            steps {
+                bat '''
+                    echo ======================================
+                    echo VALIDATING WAR FILE
+                    echo ======================================
+
+                    dir "%WAR_FILE%"
+
+                    jar tf "%WAR_FILE%" > nul
+
+                    if errorlevel 1 (
+                        echo ERROR: WAR FILE IS INVALID
+                        exit /b 1
+                    )
+
+                    echo WAR FILE IS VALID
+                '''
+            }
+        }
+
         stage('Deploy to Local Tomcat') {
             steps {
                 bat '''
-                    for %%F in (target\\*.war) do (
-                        echo Deploying %%F
-                        curl -u %TOMCAT_USER%:%TOMCAT_PASS% ^
-                        --upload-file "%%F" ^
-                        "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true" ^
-                        > deploy-result.txt
-                    )
+                    echo ======================================
+                    echo DEPLOYING TO LOCAL TOMCAT
+                    echo ======================================
 
+                    curl -u %TOMCAT_USER%:%TOMCAT_PASS% ^
+                    --upload-file "%WAR_FILE%" ^
+                    "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true" ^
+                    > deploy-result.txt
+
+                    echo.
+                    echo TOMCAT RESPONSE:
                     type deploy-result.txt
+                    echo.
 
-                    findstr /C:"OK" deploy-result.txt
+                    findstr /C:"OK" deploy-result.txt > nul
 
-                    if %ERRORLEVEL% NEQ 0 (
-                        echo Deployment failed!
+                    if errorlevel 1 (
+                        echo ERROR: TOMCAT DEPLOYMENT FAILED
                         exit /b 1
                     )
+
+                    echo TOMCAT DEPLOYMENT SUCCESSFUL
                 '''
             }
         }
@@ -55,7 +83,7 @@ pipeline {
     post {
         success {
             echo '======================================'
-            echo 'DEPLOYMENT SUCCESSFUL'
+            echo 'CI/CD DEPLOYMENT SUCCESSFUL'
             echo '======================================'
             echo 'Application URL:'
             echo 'http://localhost:8081/webapp1'
@@ -63,7 +91,7 @@ pipeline {
 
         failure {
             echo '======================================'
-            echo 'BUILD OR DEPLOYMENT FAILED'
+            echo 'CI/CD DEPLOYMENT FAILED'
             echo '======================================'
         }
     }
