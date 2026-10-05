@@ -10,6 +10,7 @@ pipeline {
         TOMCAT_URL = 'http://localhost:8081/manager/text'
         TOMCAT_USER = 'admin'
         TOMCAT_PASS = 'admin'
+
         APP_NAME = 'webapp1'
         WAR_NAME = 'webapp1.war'
     }
@@ -40,7 +41,17 @@ pipeline {
                 bat '''
                     curl -u %TOMCAT_USER%:%TOMCAT_PASS% ^
                     --upload-file %WAR_NAME% ^
-                    "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true"
+                    "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true" ^
+                    > deploy-result.txt
+
+                    type deploy-result.txt
+
+                    findstr /C:"OK" deploy-result.txt
+
+                    if %ERRORLEVEL% NEQ 0 (
+                        echo Deployment failed!
+                        exit /b 1
+                    )
                 '''
             }
         }
@@ -49,13 +60,16 @@ pipeline {
     post {
         success {
             echo '======================================'
-            echo '✅ Deployment Successful!'
+            echo 'DEPLOYMENT SUCCESSFUL'
             echo '======================================'
-            echo 'Application: http://localhost:8081/webapp1'
+            echo 'Application URL:'
+            echo 'http://localhost:8081/webapp1'
         }
 
         failure {
-            echo '❌ Build or deployment failed'
+            echo '======================================'
+            echo 'BUILD OR DEPLOYMENT FAILED'
+            echo '======================================'
         }
     }
 }
