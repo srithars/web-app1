@@ -10,9 +10,7 @@ pipeline {
         TOMCAT_URL = 'http://localhost:8081/manager/text'
         TOMCAT_USER = 'admin'
         TOMCAT_PASS = 'admin'
-
         APP_NAME = 'webapp1'
-        WAR_NAME = 'webapp1.war'
     }
 
     stages {
@@ -30,19 +28,16 @@ pipeline {
             }
         }
 
-        stage('Prepare WAR') {
-            steps {
-                bat 'copy /Y target\\*.war %WAR_NAME%'
-            }
-        }
-
         stage('Deploy to Local Tomcat') {
             steps {
                 bat '''
-                    curl -u %TOMCAT_USER%:%TOMCAT_PASS% ^
-                    --upload-file %WAR_NAME% ^
-                    "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true" ^
-                    > deploy-result.txt
+                    for %%F in (target\\*.war) do (
+                        echo Deploying %%F
+                        curl -u %TOMCAT_USER%:%TOMCAT_PASS% ^
+                        --upload-file "%%F" ^
+                        "%TOMCAT_URL%/deploy?path=/%APP_NAME%&update=true" ^
+                        > deploy-result.txt
+                    )
 
                     type deploy-result.txt
 
