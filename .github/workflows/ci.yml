@@ -6,8 +6,8 @@ on:
       - main
 
 jobs:
-  build-deploy:
-    runs-on: self-hosted
+  build:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
@@ -23,7 +23,8 @@ jobs:
       - name: Build
         run: mvn clean package
 
-      - name: Deploy to Tomcat
-        shell: cmd
+      - name: Deploy
         run: |
-          curl -u admin:admin --upload-file "target/demo-0.0.1-SNAPSHOT.war" "http://localhost:8081/manager/text/deploy?path=/webapp1&update=true"
+          curl -u ${{ secrets.TOMCAT_USER }}:${{ secrets.TOMCAT_PASS }} \
+          --upload-file target/demo-0.0.1-SNAPSHOT.war \
+          "http://YOUR_SERVER_IP:8081/manager/text/deploy?path=/webapp1&update=true"
