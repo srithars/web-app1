@@ -17,11 +17,11 @@ public class AppController {
 		return "Substraction of two numbers are:"+ (a-b);
 	}
 
-	@GetMapping("/mul/{a}/{b}")
-	public String mul(@PathVariable("a") int a, 
+	@GetMapping("/div/{a}/{b}")
+	public String div(@PathVariable("a") int a, 
 			@PathVariable("b") int b) {
 		
-		return "Multiplication of two numbers are:"+ (a*b);
+		return "Division of two numbers are:"+ (a/b);
 	}
 
 
