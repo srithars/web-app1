@@ -1,5 +1,5 @@
 
-name: Spring Boot CI/CD
+name: Spring Boot CI/CD app
 
 on:
   push:
@@ -40,7 +40,7 @@ jobs:
           )
 
           Invoke-WebRequest `
-            -Uri "http://localhost:8081/manager/text/deploy?path=/webapp1&update=true" `
+            -Uri "http://localhost:8081/manager/text/deploy?path=/webapp2&update=true" `
             -Method Put `
             -Headers @{ Authorization = "Basic $auth" } `
             -InFile "target/demo-0.0.1-SNAPSHOT.war" `
