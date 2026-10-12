@@ -1,3 +1,4 @@
+
 name: Spring Boot CI/CD
 
 on:
@@ -6,8 +7,8 @@ on:
       - main
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -17,14 +18,26 @@ jobs:
         uses: actions/setup-java@v5
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
           cache: maven
 
       - name: Build
         run: mvn clean package
 
-      - name: Deploy
+      - name: Deploy to Tomcat
+        shell: powershell
+        env:
+          TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
+          TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}
         run: |
-          curl -u ${{ secrets.TOMCAT_USER }}:${{ secrets.TOMCAT_PASS }} \
-          --upload-file target/demo-0.0.1-SNAPSHOT.war \
-          "http://YOUR_SERVER_IP:8081/manager/text/deploy?path=/webapp1&update=true"
+          $pair = "$env:TOMCAT_USER`:$env:TOMCAT_PASS"
+          $auth = [Convert]::ToBase64String(
+            [Text.Encoding]::ASCII.GetBytes($pair)
+          )
+
+          Invoke-WebRequest `
+            -Uri "http://localhost:8081/manager/text/deploy?path=/webapp1&update=true" `
+            -Method Put `
+            -Headers @{ Authorization = "Basic $auth" } `
+            -InFile "target/demo-0.0.1-SNAPSHOT.war" `
+            -ContentType "application/octet-stream"
