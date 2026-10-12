@@ -1,5 +1,5 @@
 
-name: Spring Boot Build
+name: Spring Boot CI/CD
 
 on:
   push:
@@ -11,8 +11,8 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
+  build-and-deploy:
+    runs-on: self-hosted
 
     steps:
       - name: Checkout
@@ -25,12 +25,23 @@ jobs:
           distribution: temurin
           cache: maven
 
-      - name: Build Spring Boot
-        run: mvn -B clean package -DskipTests
+      - name: Build WAR
+        run: mvn clean package -DskipTests
 
-      - name: Upload JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: springboot-app
-          path: target/*.jar
-          if-no-files-found: error
+      - name: Deploy to Tomcat
+        shell: powershell
+        env:
+          TOMCAT_USER: ${{ secrets.TOMCAT_USER }}
+          TOMCAT_PASS: ${{ secrets.TOMCAT_PASS }}
+        run: |
+          $pair = "$env:TOMCAT_USER`:$env:TOMCAT_PASS"
+          $auth = [Convert]::ToBase64String(
+            [Text.Encoding]::ASCII.GetBytes($pair)
+          )
+
+          Invoke-WebRequest `
+            -Uri "http://localhost:8081/manager/text/deploy?path=/webapp1&update=true" `
+            -Method Put `
+            -Headers @{ Authorization = "Basic $auth" } `
+            -InFile "target/demo-0.0.1-SNAPSHOT.war" `
+            -ContentType "application/octet-stream"
